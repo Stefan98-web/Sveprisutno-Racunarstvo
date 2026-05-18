@@ -3,7 +3,7 @@ import json
 import paho.mqtt.client as mqtt
 from influxdb_client import InfluxDBClient, Point, WritePrecision
 
-# ---------------- CONFIG ----------------
+# CONFIG
 MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "sensors/data")
@@ -13,7 +13,7 @@ INFLUX_TOKEN = os.getenv("INFLUX_TOKEN")
 INFLUX_ORG = os.getenv("INFLUX_ORG")
 INFLUX_BUCKET = os.getenv("INFLUX_BUCKET")
 
-# ---------------- INFLUX CLIENT ----------------
+#  INFLUX CLIENT
 influx = InfluxDBClient(
     url=INFLUX_URL,
     token=INFLUX_TOKEN,
@@ -22,7 +22,6 @@ influx = InfluxDBClient(
 
 write_api = influx.write_api()
 
-# ---------------- PARSE + WRITE ----------------
 def write_to_influx(data: dict):
 
     point = Point("sensor_data")
@@ -37,11 +36,9 @@ def write_to_influx(data: dict):
     point.field("gyro_z", float(data.get("GyroZ", 0)))
     point.field("button", int(data.get("Button", 0)))
 
-    # optional debug fields
     if "CreatedAt" in data:
         point.field("created_at", float(data["CreatedAt"]))
 
-    # IMPORTANT: Influx timestamp
     if "ReceivedAt" in data:
         try:
             from datetime import datetime
@@ -55,7 +52,7 @@ def write_to_influx(data: dict):
     print("[INFLUX] written point")
 
 
-# ---------------- MQTT CALLBACK ----------------
+# MQTT CALLBACK
 def on_message(client, userdata, msg):
     try:
         payload = msg.payload.decode("utf-8")
@@ -69,7 +66,6 @@ def on_message(client, userdata, msg):
         print("[ERROR] processing message:", e)
 
 
-# ---------------- MAIN ----------------
 def main():
     client = mqtt.Client()
     
