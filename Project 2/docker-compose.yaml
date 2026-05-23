@@ -5,11 +5,9 @@ services:
     image: eclipse-mosquitto:2
     container_name: mosquitto
     restart: unless-stopped
-
     ports:
       - "1883:1883"
       - "9001:9001"
-
     volumes:
       - ./mosquitto/config:/mosquitto/config
       - ./mosquitto/data:/mosquitto/data
@@ -20,13 +18,10 @@ services:
     image: influxdb:2
     container_name: influxdb
     restart: unless-stopped
-
     ports:
       - "8086:8086"
-
     volumes:
       - influx_data:/var/lib/influxdb2
-
     environment:
       DOCKER_INFLUXDB_INIT_MODE: setup
       DOCKER_INFLUXDB_INIT_USERNAME: admin
@@ -40,17 +35,13 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     restart: unless-stopped
-
     ports:
       - "3000:3000"
-
     volumes:
       - grafana_data:/var/lib/grafana
-
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
-
     depends_on:
       - influxdb
 
@@ -60,7 +51,6 @@ services:
     container_name: ble-proxy
     restart: unless-stopped
     privileged: true
-
     depends_on:
       - mosquitto
     volumes:
@@ -79,11 +69,9 @@ services:
     build: ./influx-writer
     container_name: influx-writer
     restart: unless-stopped
-
     depends_on:
       - mosquitto
       - influxdb
-
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: 1883
@@ -93,18 +81,35 @@ services:
       INFLUX_ORG: iot
       INFLUX_BUCKET: sensors
 
-  # # ML / ANOMALY DETECTION
-  # ml-service:
-  #   build: ./ml-service
-  #   container_name: ml-service
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - mosquitto
-  #   environment:
-  #     MQTT_HOST: mosquitto
-  #     MQTT_PORT: 1883
-  #     INPUT_TOPIC: sensors/data
-  #     OUTPUT_TOPIC: sensors/anomaly
+  ml-service:
+    build: ./ml-service
+    container_name: ml-service
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+      - edge-impulse
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: 1883
+      INPUT_MQTT_TOPIC: sensors/data
+      OUTPUT_MQTT_TOPIC: model/alerts
+      EI_URL: http://edge-impulse:1337/api/features
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./ml-service:/app
+  
+  edge-impulse:
+    image: public.ecr.aws/g7a8t7v6/inference-container:v1.93.3
+    container_name: edge-impulse
+    ports:
+      - "1337:1337"
+    command: >
+      --api-key ${EI_API_KEY}
+      --run-http-server 1337
+      --impulse-id 6
+      --quantized
+    restart: unless-stopped
+
 volumes:
   influx_data:
   grafana_data:

@@ -15,6 +15,7 @@ BLECharacteristic sensorChar(
 #define BLUE_LED LEDB
 #define RED_LED LEDR
 #define BUTTON_PIN A0
+#define DATA_COLLECTION_FREQUENCY 20
 
 typedef struct {
     int16_t *buffer;
@@ -75,11 +76,16 @@ static bool microphone_inference_record(void)
 {
     inference.buf_ready = 0;
     inference.buf_count = 0;
+    int count = 0;
 
     while (inference.buf_ready == 0) {
-        delay(10);
+        delay(50);
+        if(dataCollecting && count < DATA_COLLECTION_FREQUENCY){
+            sendOverBT();
+            count++;
+        }
     }
-
+    Serial.println(count);
     return true;
 }
 
@@ -222,9 +228,6 @@ void loop()
     ei_printf("Done\n");
 
     runInference();
-
-    if(dataCollecting)
-        sendOverBT();
 
     if (!monitoringActive) {
         digitalWrite(BLUE_LED, HIGH);
