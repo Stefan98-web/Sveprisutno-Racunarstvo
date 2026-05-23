@@ -1,8 +1,8 @@
 import json
-import numpy as np
+import numpy as np # type: ignore
 import os
-import requests
-import paho.mqtt.client as mqtt
+import requests # type: ignore
+import paho.mqtt.client as mqtt # type: ignore
 from collections import deque
 
 MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
